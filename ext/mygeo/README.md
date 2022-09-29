@@ -1,0 +1,43 @@
+# Geometric Data Structures and Algorithms
+- [x] vector
+- [x] matrix
+- [x] transforms
+- [x] quaternion 
+- [ ] rigidbody dynamics
+  - [x] free space dynamics
+    - [x] linear motion
+    - [x] angular motion
+  - [ ] collision detection
+  - [ ] collision response
+- [ ] geometric intersection 
+  - [ ] AABB
+    - [x] x AABB
+    - [x] x Ray
+    - [x] Union AABB
+  - [ ] OBB
+    - [ ] OBB generation
+      - [ ] PCA
+      - [ ] dito算法
+    - [ ] x OBB
+    - [ ] x Sphere
+  - [ ] 2D
+    - [x] Line2D x Line2D
+    - [x] LineSegment2D x LineSegment2D
+    - [ ] Triangle2D x Triangle2D (only flag)
+  - [ ] 3D
+    - [ ] Line3D x Polygon
+    - [ ] Line3D x Disk
+    - [ ] Line3D x Polyhedron
+    - [ ] Line3D x Quadric Surfaces
+    - [ ] Line3D x Polynomial Surfaces
+    - [ ] Sphere x Sphere
+    - [ ] Sphere x Plane
+    - [ ] Sphere x Triangle
+    - [x] Plane x Plane
+    - [x] Plane x Line3D
+    - [x] Triangle3D x Line3D: get baricentric coords and t
+    - [x] Triangle3D x Plane
+    - [ ] Triangle3D x Triangle3D (only flag)
+    - [ ] Polyhedra x Polyhedra
+- [ ] fluid mechanics
+- [ ] deformation body dynamics?

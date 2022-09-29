@@ -1,0 +1,4 @@
+build/*
+resources/*
+doc/*
+.vscode/*

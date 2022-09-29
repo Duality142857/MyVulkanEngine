@@ -1,0 +1,17 @@
+// #include"../geometry/mesh.h"
+#pragma once
+bool TriangleMesh::hit(const Ray& ray, HitRecord& rec) const 
+{
+    bool flag=false;
+    for(int i=0;i!=numTriangles;++i)
+    {
+        flag=triangles[i].hit(ray,rec);
+    }
+    // return flag;
+
+    // for(auto& tri:triangles)
+    // {
+    //     flag=tri.hit(ray,rec);
+    // }
+    return flag;
+}
