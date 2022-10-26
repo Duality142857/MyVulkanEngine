@@ -15,7 +15,7 @@
 class App
 {
 public:
-    float fps=120.f;
+    float fps=60.f;
     float frameInterval=1000.f/fps;
     float t_elapsed=0;
     float t_delta=0;
@@ -54,6 +54,8 @@ public:
     virtual void createDescriptorSets()=0;
     virtual void updateDescriptorSets(MyCommandBuffer& mycommmandbuffer, uint32_t imageIndex)=0;
     virtual void tick(float t_delta, float t_elapsed)=0;
+
+
         
     void mainloop()
     {

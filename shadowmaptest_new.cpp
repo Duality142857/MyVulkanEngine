@@ -14,6 +14,9 @@
 #include"../src/my_entity.h"
 namespace fs=std::filesystem;
 
+float ga=10.f;
+float eta=0.99;
+
 struct UBO_scene
 {
     alignas(16) MyGeo::Mat4f model;
@@ -33,6 +36,7 @@ struct UBO_shadow
     // MyGeo::Mat4f sceneModel;
 };
 
+static constexpr int storagebufferLen=512;
 class ShadowMapTest: public App 
 {
 
@@ -49,6 +53,8 @@ private:
     std::vector<VkDescriptorSet> descriptorSets_shadow;
 
     std::vector<MyUniformBuffer> uniformBuffers_scene;
+    // MyStorageBuffer storageBuffer{rhi,sizeof(int)*storagebufferLen};
+    std::vector<MyStorageBuffer> storageBuffers_scene;
     std::vector<MyUniformBuffer> uniformBuffers_shadow;
 
     UBO_scene ubo_scene{};
@@ -70,7 +76,7 @@ private:
     float depthBiasSlope=1.75f;
     MyTexturePool texturePool{rhi};
     // MyScene myscene{rhi,&texturePool};
-    DynamicWorld dynamicWorld{rhi,&texturePool};
+    DynamicWorld dynamicWorld{rhi,&texturePool,&gui};
     MyModel* model;
     
 
@@ -112,7 +118,6 @@ void loadAllTextures(const std::string& pathstr)
             std::cout<<"load texture..."<<std::endl;
             texturePool.addTexture(entryPath.c_str());
         }
-        
     }
 }
 
@@ -122,9 +127,6 @@ public:
     {
         descriptorSets_shadow.resize(rhi->imageCount);
         descriptorSets_scene.resize(rhi->imageCount);
-        std::cout<<"asdf"<<std::endl;
-
-
         // loadAllTextures("../resources");
 
         texturePool.addTexture("../resources/cube/default.png");
@@ -145,9 +147,36 @@ public:
         rbCI.L=MyGeo::Vec3f{0,0,0};
         rbCI.position=MyGeo::Vec3f{0,3,0};
         // rbCI.q.updateFromRotation(My);
-    
-        dynamicWorld.addBox({0.5,0.5,0.5},rbCI,MyGeo::Vec3f{0,3,0},MyGeo::Rotation{{0,1,0},0});//,MyGeo::translate-Matrix({0,5,0})
-        // dynamicWorld.addPlane({1,3,0},0);
+        //basic box has lengths 1,1,1
+        // dynamicWorld.addBox({1,1,1},rbCI,MyGeo::Vec3f{0,3,0},MyGeo::Rotation{MyGeo::Vec3f{1,2,3}.normalVec(),1});//,MyGeo::translate-Matrix({0,5,0})
+        // dynamicWorld.addSphere({0.25},rbCI,MyGeo::Vec3f{1,3,0});
+        // dynamicWorld.addSphere({0.3},rbCI,MyGeo::Vec3f{2,4,0});
+
+        for(int i=0;i!=0;++i)
+        {
+            auto a1=getRand(0.2f,0.5f);
+            auto a2=getRand(0.3f,0.6f);
+            auto a3=getRand(0.3f,0.6f);
+            // a1=1.f;
+            rbCI.mass=a1*a2*a3;
+            //MyGeo::Rotation{randomVec3(0.f,1.f),1}
+
+            dynamicWorld.addBox({a1,a2,a3},rbCI,MyGeo::Vec3f{getRand(-4.f,4.f),getRand(1.f,4.f),getRand(-4.f,4.f)},MyGeo::Rotation{{1,1,1},getRand(0.f,1.f)});
+
+            auto r=getRand(0.2f,0.5f);
+            rbCI.mass=4.f*r*r*r;
+            
+            dynamicWorld.addSphere(
+                {r},
+                rbCI,
+                MyGeo::Vec3f{getRand(-5.f,5.f),getRand(0.f,5.f),getRand(-5.f,5.f)}
+                );
+
+        }
+
+
+
+
         // dynamicWorld.addPlane({-1,-3,0},0);
 
         // dynamicWorld.addPlane({-1,-4,0},0);
@@ -283,20 +312,65 @@ public:
     void tick(float t_delta, float t_elapsed) override 
     {
         // myscene.tick(t_delta,t_elapsed);
-        dynamicWorld.tick(t_delta);
+        dynamicWorld.tick(t_delta,t_elapsed);
+        std::vector<uint32_t> d(storagebufferLen,0);
+        void* data;
+        storageBuffers_scene[0].map(&data);
+        int* q=(int*)data;
+        
+        for(int i=0;i!=storagebufferLen;++i)
+        {
+            if(q[i]!=0)
+            {
+                if(rhi->mywindow->leftmousePressed)
+                {
+                    // std::cout<<"entity: "<<q[i]<<" selected!"<<std::endl;
+                    dynamicWorld.selectedId=q[i];
+                }
+                break;
+            }
+        }
+        std::memset(data,0,storagebufferLen*sizeof(uint32_t));
+
+
+        // rhi->copyBuffer2host(storageBuffers_scene[0].buffer,d.data(),storageBuffers_scene[0].size);
+        // for(auto& x:d) 
+        // {
+        //     if(x!=0)
+        //     {
+        //         if(rhi->mywindow->leftmousePressed)
+        //         {
+        //             std::cout<<"entiti: "<<x<<" selected!"<<std::endl;
+        //         }
+        //         break;
+        //     }    
+        // }
+    }
+    void addEnvironment()
+    {
+        dynamicWorld.addPlane({0,1,0},0);
+        dynamicWorld.addPlane({0,-1,0},10);
+
+        dynamicWorld.addPlane({0,0,1},5);
+        dynamicWorld.addPlane({0,0,-1},5);
+
+        dynamicWorld.addPlane({1,0,0},5);
+        dynamicWorld.addPlane({-1,0,0},5);
     }
 
     void prepareData() override
     {
         //* load models(creating vertexbuffers and indexbuffers)
-
+        addEnvironment();
         //* create uniform buffers
         VkDeviceSize bufferSize_scene = sizeof(UBO_scene);
         VkDeviceSize bufferSize_shadow=sizeof(UBO_shadow);
+        VkDeviceSize storageBufferSize=sizeof(uint32_t)*storagebufferLen;
         for(int i=0;i!=rhi->images.size();++i) 
         {
             uniformBuffers_scene.push_back({rhi,bufferSize_scene});
             uniformBuffers_shadow.push_back({rhi,bufferSize_shadow});
+            storageBuffers_scene.push_back({rhi,storageBufferSize});
         } 
         std::cout<<"finish prepredata"<<std::endl;
     }
@@ -342,9 +416,9 @@ public:
         cam.setNearFar(-0.1f,-50.f);
         // ubo_scene.near=-0.1f;
         // ubo_scene.far=-50.f;
-
         float fov=40-2*mywindow->mousescrollVal;
-        cam.setFov(fov, rhi->swapChainExtent.width / (float)  rhi->swapChainExtent.height);
+        if(!gui.anyWindowFocused())
+            cam.setFov(fov, rhi->swapChainExtent.width / (float)  rhi->swapChainExtent.height);
         cam.updateMat();
         ubo_scene.model=modelMat;
         ubo_scene.view=cam.viewMat;
@@ -371,6 +445,9 @@ public:
 
         uniformBuffers_scene[imageIndex].updateData(&ubo_scene,sizeof(ubo_scene));
         uniformBuffers_shadow[imageIndex].updateData(&ubo_shadow,sizeof(ubo_shadow));
+
+
+        
     }
 
     void createPipelines() override
@@ -394,12 +471,15 @@ public:
         //将这些info传给VkWriteDescriptorSet结构体作为参数，和descriptorset联系起来
         VkDescriptorBufferInfo uniformBufferInfo_scene=descriptors.bufferInfo(uniformBuffers_scene[imageIndex].buffer,sizeof(UBO_scene));
         VkDescriptorBufferInfo uniformBufferInfo_shadow=descriptors.bufferInfo(uniformBuffers_shadow[imageIndex].buffer,sizeof(UBO_shadow));
+
+        VkDescriptorBufferInfo storageBufferInfo_scene=descriptors.bufferInfo(storageBuffers_scene[imageIndex].buffer,storageBuffers_scene[imageIndex].size);
+
         //! texturePool相关imageinfos直接在下面结构体给出
 
         VkDescriptorImageInfo shadowDepthImageInfo=descriptors.imageInfo(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,rhi->shadowImageView,rhi->shadowImageSampler);
 
         
-        std::array<VkWriteDescriptorSet,3> descriptorWrites_scene{};
+        std::array<VkWriteDescriptorSet,4> descriptorWrites_scene{};
         descriptorWrites_scene[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites_scene[0].dstSet = descriptorSets_scene[setIndex];
         descriptorWrites_scene[0].dstBinding = 0;
@@ -424,6 +504,14 @@ public:
         descriptorWrites_scene[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         descriptorWrites_scene[2].descriptorCount = 1;
         descriptorWrites_scene[2].pImageInfo = &shadowDepthImageInfo;
+
+        descriptorWrites_scene[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites_scene[3].dstSet = descriptorSets_scene[setIndex];
+        descriptorWrites_scene[3].dstBinding = 3;
+        descriptorWrites_scene[3].dstArrayElement = 0;
+        descriptorWrites_scene[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descriptorWrites_scene[3].descriptorCount = 1;
+        descriptorWrites_scene[3].pBufferInfo = &storageBufferInfo_scene;  
 
         vkUpdateDescriptorSets(rhi->device,descriptorWrites_scene.size(),descriptorWrites_scene.data(),0,nullptr);
 
@@ -454,6 +542,9 @@ public:
         layoutBindings.push_back(descriptors.setLayoutBinding(0,1,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
         layoutBindings.push_back(descriptors.setLayoutBinding(1,textureNum,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
         layoutBindings.push_back(descriptors.setLayoutBinding(2,1,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT));
+
+        layoutBindings.push_back(descriptors.setLayoutBinding(3,1,VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
+
         descriptors.createDescriptorSetLayout(descriptorSetLayout,layoutBindings);
 
         //!allocateDescriptorsets
@@ -507,6 +598,39 @@ public:
         ImGui::PopItemWidth();
         ImGui::ColorEdit3("Light Color", lightColor, ImGuiColorEditFlags_NoAlpha);
         ImGui::SliderFloat("LightIntensity", &lightIntensity, 1.0f, 50.0f);
+        ImGui::SliderFloat("gravity",&ga,0.f,200.f);
+        ImGui::SliderFloat("eta",&eta,0.f,1.f);
+
+        RigidBodyCreatInfo rbCI{};
+
+
+        if(ImGui::Button("Add Sphere"))
+        {
+            // auto r=getRand(0.2f,0.5f);
+            auto r=0.5f;
+            rbCI.mass=4.f/3*r*r*r;
+            dynamicWorld.addSphere({r},rbCI,
+                MyGeo::Vec3f{0.f,4.f,0.f});
+        }
+
+        ImGui::SameLine();
+
+        if(ImGui::Button("Add Box"))
+        {
+            auto a1=getRand(0.2f,0.5f);
+            auto a2=getRand(0.3f,0.6f);
+            auto a3=getRand(0.3f,0.6f);
+            rbCI.mass=a1*a2*a3;
+            dynamicWorld.addBox({a1,a2,a3},rbCI,
+                MyGeo::Vec3f{0.f,5.f,0.f},MyGeo::Rotation{{0,1,0},getRand(0.f,1.f)});
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Clear objects"))
+        {
+            dynamicWorld.entities.clear();
+            addEnvironment();
+        }
 
         ImGuizmo::SetOrthographic(false);
         ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
@@ -524,6 +648,9 @@ public:
 
         // ImGuizmo::ViewManipulate(view,)
         ImGuizmo::AllowAxisFlip(false);
+        bool showDemoWindow=true;
+        ImGui::ShowDemoWindow(&showDemoWindow);
+
 
         ImGui::End();
         ImGui::Render();
@@ -537,10 +664,34 @@ public:
 
 int main()
 {
-    // testModel();return 0;
-    // MyGeo::Qua
-    MyWindow mywindow(800,600);
+
+    // MyEntity e1,e2;
+    // e1.mass=2;e2.mass=1;
+    // e1.velocity=MyGeo::Vec3f{1,0,0};
+    // e2.velocity=MyGeo::Vec3f{-1,0,0};
+    // e1.position=MyGeo::Vec3f{0.8,0,1.2};
+    // e2.position=MyGeo::Vec3f{1.2,0,0.8};
+
+    // e1.I_inv_0=MyGeo::Eye<float,3>();
+    // e2.I_inv_0=MyGeo::Eye<float,3>();
+
+
+    
+    
+    // CollisionRecord record;
+    // record.normal=MyGeo::Vec3f{1,0,-1}.normalVec();
+    // record.point=MyGeo::Vec3f{1,1};
+
+    // elasticCollide(e1,e2,record); return 0;
+    // elasticCollide(e1,e2);
+    // std::cout<<e1.velocity<<" "<<e2.velocity<<std::endl; return 0;
+    
+
+
+
+    MyWindow mywindow(1200,800);
     MyVulkanRHI rhi{&mywindow};
+
     MyRenderer renderer{&rhi};
     std::cout<<"starting init app"<<std::endl;
     ShadowMapTest app(&mywindow,&renderer);

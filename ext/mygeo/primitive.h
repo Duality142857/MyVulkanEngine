@@ -142,11 +142,26 @@ public:
     Sphere(const Vec3f& _center, float _r):center{_center},r{_r}
     {}
 
-    bool intersectSphere(const Sphere& sph1)
+    bool intersectSphere(const Sphere& sph1, float& deepness)
     {
         const Sphere& sph0=*this;
-        if((sph0.center-sph1.center).norm2()<(sph0.r+sph1.r)*(sph0.r+sph1.r)) return true;
-        return false;
+        deepness=(sph0.center-sph1.center).norm()-sph0.r-sph1.r;
+        if(deepness>0) return false;
+        // if((sph0.center-sph1.center).norm2()<(sph0.r+sph1.r)*(sph0.r+sph1.r)) return true;
+        return true;
+    }
+
+
+    bool abovePlane(const Plane& plane, float& deepness, MyGeo::Vec3f& contactPoint) const 
+    {
+        deepness=plane.distance(center)-r;
+        if(deepness<0)
+        {
+            contactPoint=center+deepness*plane.normal;
+            return false;
+        }
+        return true;
+        // return plane.distance(center)>r;
     }
 
 };
@@ -468,5 +483,8 @@ public:
     {}
 
 };
+
+
+
 
 }

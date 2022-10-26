@@ -14,8 +14,12 @@ layout(binding = 0) uniform UniformBufferObject
     vec3 kd;
 } ubo_scene;
 
+
+
 layout(push_constant) uniform PushConsts {
     mat4 model;
+    vec2 mousePos;
+    uint objId;
 } pushConsts;
 // layout (binding = 1) uniform modelMats
 // {
@@ -48,7 +52,8 @@ layout(location = 2) out vec2 fragTexCoord;
 layout(location = 3 ) out vec4 fragShadowCoord;
 layout(location = 4) out vec3 fragViewVec_normalized;
 layout(location = 5) out vec3 fragLightVec;
-layout(location = 6) flat out int outTextureId;
+layout(location = 6) flat out int outTextureId; 
+layout(location =7 ) out vec3 outColor;
 
 mat4 translate(vec3 tv)
 {
@@ -61,6 +66,7 @@ mat4 translate(vec3 tv)
 
 void main()
 {
+    outColor=inColor;
     outTextureId=int(inTexCoord.z);
     mat4 transformMat=ubo_scene.proj*ubo_scene.view*pushConsts.model;
     gl_Position=transformMat*vec4(inPosition,1.f);

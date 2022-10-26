@@ -64,6 +64,11 @@ public:
         return {(float)x,(float)y};
     }
 
+    MyGeo::Vec2f cursorPos()
+    {
+        return getCursorPos(window);
+    }
+
     void tick()
     {
         lastCursorPosition=currentCursorPosition;

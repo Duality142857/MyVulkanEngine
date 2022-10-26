@@ -153,7 +153,9 @@ public:
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+    
     void copyBuffer2host(VkBuffer srcBuffer, void* data, VkDeviceSize size);
 
     void createImageWithInfo(VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);

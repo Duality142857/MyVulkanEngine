@@ -5,6 +5,9 @@
 struct PushConstantStruct
 {
     MyGeo::Mat4f modelMat;
+    MyGeo::Vec2f mousePos;
+    uint32_t objId;
+    uint32_t selectedId;
 };
 class MyVulkanUtils
 {

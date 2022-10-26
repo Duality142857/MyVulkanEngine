@@ -27,13 +27,16 @@ public:
 
     std::vector<Vec3f> getVertices() const
     {
-        std::vector<Vec3f> vertices(6);
-        vertices[0]=center+extent[0]*axis[0];
-        vertices[1]=center-extent[0]*axis[0];
-        vertices[2]=center+extent[1]*axis[1];
-        vertices[3]=center-extent[1]*axis[1];
-        vertices[4]=center+extent[2]*axis[2];
-        vertices[5]=center-extent[2]*axis[2];
+        std::vector<Vec3f> vertices(8);
+        vertices[0]=center+extent[0]*axis[0]+extent[1]*axis[1]+extent[2]*axis[2];
+        vertices[1]=center+extent[0]*axis[0]+extent[1]*axis[1]-extent[2]*axis[2];
+        vertices[2]=center+extent[0]*axis[0]-extent[1]*axis[1]+extent[2]*axis[2];
+        vertices[3]=center-extent[0]*axis[0]+extent[1]*axis[1]+extent[2]*axis[2];
+        vertices[4]=center-extent[0]*axis[0]-extent[1]*axis[1]+extent[2]*axis[2];
+        vertices[5]=center-extent[0]*axis[0]+extent[1]*axis[1]-extent[2]*axis[2];
+        vertices[6]=center+extent[0]*axis[0]-extent[1]*axis[1]-extent[2]*axis[2];
+        vertices[7]=center-extent[0]*axis[0]-extent[1]*axis[1]-extent[2]*axis[2];
+
         return vertices;
     }
     
@@ -310,7 +313,7 @@ public:
     }
 
     //get min and max proj of points along dir
-    static Vec2f getExtremProjPair(const Vec3f& dir, const std::vector<Vec3f>& points)
+    static Vec2f getExtremProjPair(const Vec3f& dir, const std::vector<Vec3f>& points, int& minIndex)
     {
         float minProj=std::numeric_limits<float>::max();
         float maxProj=std::numeric_limits<float>::lowest();
@@ -321,6 +324,7 @@ public:
             if(proj<minProj)
             {
                 minProj=proj;
+                minIndex=i;
             }
             if(proj>maxProj)
             {
@@ -330,8 +334,16 @@ public:
         return {minProj,maxProj};
     }
 
-    bool intersectOBB(const OBB& b1) const 
+    // //narrow phase
+    // void intersectOBB_narrow(const OBB& b1) const 
+    // {
+    //     const OBB& b0=*this;
+        
+    // }
+    //broad phase
+    bool intersectOBB(const OBB& b1, Vec3f& averageContactPoint) const 
     {
+        int minIndex;
         const OBB& b0=*this;
         auto verts0=b0.getVertices();
         auto verts1=b1.getVertices();
@@ -339,14 +351,17 @@ public:
         for(int i=0;i!=3;++i)
         {
             Vec3f n0=b0.axis[i].cross(b0.axis[(i+1)%3]);
-            Vec3f n1=b1.axis[i].cross(b1.axis[(i+1)%3]);
-            
-            Vec2f pair1=getExtremProjPair(n0,verts1);
-            Vec2f pair0=getExtremProjPair(n0,verts0);
-            if(pair0[0]>pair1[1] || pair0[1]<pair1[0]) return false;
 
-            pair1=getExtremProjPair(n1,verts1);
-            pair0=getExtremProjPair(n1,verts0);
+
+            Vec2f pair1=getExtremProjPair(n0,verts1,minIndex);
+            Vec2f pair0=getExtremProjPair(n0,verts0,minIndex);
+            if(pair0[0]>pair1[1] || pair0[1]<pair1[0]) return false;
+            
+
+            Vec3f n1=b1.axis[i].cross(b1.axis[(i+1)%3]);
+
+            pair1=getExtremProjPair(n1,verts1,minIndex);
+            pair0=getExtremProjPair(n1,verts0,minIndex);
             if(pair0[0]>pair1[1] || pair0[1]<pair1[0]) return false;
         }
         //cross products of edges
@@ -354,10 +369,37 @@ public:
         for(int j=0;j!=3;++j)
         {
             Vec3f a=b0.axis[i].cross(b1.axis[j]);
-            Vec2f pair1=getExtremProjPair(a,verts1);
-            Vec2f pair0=getExtremProjPair(a,verts0);
+            Vec2f pair1=getExtremProjPair(a,verts1,minIndex);
+            Vec2f pair0=getExtremProjPair(a,verts0,minIndex);
             if(pair0[0]>pair1[1] || pair0[1]<pair1[0]) return false;
         }
+
+        bool contactArray[8]={1,1,1,1,1,1,1,1};
+
+        for(int k=0;k!=8;++k)
+        {
+            for(int i=0;i!=3;++i)
+            {
+                auto proj=verts0[k].dot(b1.axis[i]);
+                if(proj<(center[i]-extent[i]) && proj>(center[i]+extent[i]))
+                {
+                    contactArray[k]=0;
+                    break;
+                }
+            }
+        }
+
+        int count=0;
+        for(int i=0;i!=8;++i)
+        {
+            if(contactArray[i])
+            {
+                averageContactPoint+=verts0[i];
+                count+=1;
+            }
+        }
+        averageContactPoint/=(float)count;
+
 
         return true;
     }
@@ -369,16 +411,34 @@ public:
      * @return true 
      * @return false 
      */
-    bool abovePlane(const Plane& p) const 
+    bool abovePlane(const Plane& p, float& deepness, MyGeo::Vec3f& contactPoint) const 
     {
+        int minIndex;
         auto verts=getVertices();
-        Vec2f pair=getExtremProjPair(p.normal,verts);
-        //minproj larger than the proj of plane along normal
-        if(pair[0]>-p.d) return false;
-        return true;
+        // Vec2f pair=getExtremProjPair(p.normal,verts,minIndex);
+        float minProj=std::numeric_limits<float>::max();
+        // float maxProj=std::numeric_limits<float>::lowest();
+        int num=0;
+        for(auto& v:verts)
+        {
+            float proj=v.dot(p.normal);
+            //point below
+            if(proj+p.d<0)
+            {
+                contactPoint+=v;
+                num+=1;
+                if(minProj>proj) minProj=proj;
+            }
+        }
+        if(num==0) return true;
+        deepness=minProj+p.d;
+        contactPoint/=(float)num;
+
+        return false;
     }
 
-    bool intersectSphere(const Sphere& sph, Collision& collision) const 
+
+    bool intersectSphere(const Sphere& sph, float& deepness) const 
     {
         Mat3f invM{
             Vec3f{axis[0].x,axis[1].x,axis[2].x},
@@ -396,6 +456,31 @@ public:
         {   
             return false;
         }
+        
+        //sphere center out of the box
+        if(closePoint!=localSphereCenter)
+        {
+            
+            deepness=(localSphereCenter-closePoint).norm()-sph.r;
+            // std::cout<<"deepness: "<<deepness<<std::endl;
+            // std::cout<<"obb "<<center<<' '<<extent<<std::endl;
+            // std::cout<<"closePoint "<<closePoint<<std::endl;
+            // std::cout<<"sphere center: "<<sph.center<<std::endl;
+        }
+        else 
+        {
+            deepness=0.001f;
+        }
+
+        // bool inflag=true;
+        // for(int i=0;i!=3;++i)
+        // {
+        //     if(localSphereCenter[i]<-extent[i] || localSphereCenter[i]>extent[i])
+        //     {
+        //         inflag=false;
+        //         break;
+        //     }
+        // }
         return true;
     }
 

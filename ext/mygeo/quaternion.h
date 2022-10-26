@@ -29,6 +29,14 @@ struct Quaternion
     //由旋转构造四元数，用户负责保证axis的归一性
     Quaternion(const MyGeo::Vec<T,3>& axis, T angle):w{std::cos(angle)},v{std::sin(angle)*axis}{}
 
+    Quaternion(const MyGeo::Vec<T,3>& v0,const MyGeo::Vec<T,3>& v1)
+    {
+        v=v0.cross(v1);
+        w=std::sqrt(v0.norm2()*v1.norm2())+v0.dot(v1);
+        normalize();
+
+    }
+
     //!should be half rotation angle!
     void updateFromRotation(const MyGeo::Vec<T,3>& axis, T angle)
     {
@@ -92,6 +100,13 @@ struct Quaternion
 
     }
 
+    void normalize()
+    {
+        T n=1.f/norm1();
+        w*=n;
+        v*=n;
+    }
+
     Quaternion<T> operator*(T k) const 
     {
         return Quaternion<T>{k*w,k*v};
@@ -131,7 +146,10 @@ class Rotation
 {
 public:
     Quaternion<float> q;
-    Rotation(const MyGeo::Vec3f axis, float angle):q{axis,angle*0.5f}{}
+    Rotation(const MyGeo::Vec3f& axis, float angle):q{axis,angle*0.5f}{}
+
+    Rotation(const MyGeo::Vec3f& v0,const MyGeo::Vec3f& v1):q{v0,v1}
+    {}
     const Quaternion<float>& quaternion() const 
     {
         return q;

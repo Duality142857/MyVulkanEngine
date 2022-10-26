@@ -13,6 +13,19 @@ layout(binding = 0) uniform UniformBufferObject
     vec3 kd;
 } ubo;
 
+#define LAYERNUM 512
+layout(binding = 3) buffer mystorageBuffer
+{
+    uint objectIDs[LAYERNUM];
+};
+
+layout(push_constant) uniform PushConsts {
+    mat4 model;
+    vec2 mousePos;
+    uint objId;
+    uint selectedId;
+} pushConsts;
+
 
 layout (constant_id = 0) const int textArraySize = 10;
 
@@ -26,7 +39,7 @@ layout(location = 3) in vec4 inShadowCoord;
 layout(location = 4) in vec3 fragViewVec_normalized;
 layout(location = 5) in vec3 fragLightVec;
 layout(location = 6) flat in int textureId;
-
+layout(location =7 ) in vec3 inColor;
 
 layout(location = 0) out vec4 outColor;
 
@@ -136,11 +149,35 @@ float pcss(vec4 shadowCoord)
     return pcf(shadowCoord,penumbraSize);
 }
 
+// #define LAYERNUM 32
+// layout(binding = 3) buffer mystorageBuffer
+// {
+//     uint objectIDs[LAYERNUM];
+// };
 
+// layout(push_constant) uniform PushConsts {
+//     mat4 model;
+//     vec2 mousePos;
+//     uint objId;
+// } pushConsts;
+float getDarkness(vec2 uv, float k)
+{
+    if(uv.x<0||uv.y<0) return 1.0;
+    int t=int(floor(uv.x*k))+int(floor(uv.y*k));
+    if(t%2==0) return 0.0;
+    return 1.0;
+}
 
+    
 
 void main() 
 {
+    //mouse picking 
+    uint layerInd=uint(gl_FragCoord.z*LAYERNUM);
+    if(length(pushConsts.mousePos-gl_FragCoord.xy)<1)
+    {
+        objectIDs[layerInd]=pushConsts.objId;
+    }
     vec4 shadowCoord=inShadowCoord/inShadowCoord.w;
     float visibility=pcss(shadowCoord);
     
@@ -163,5 +200,30 @@ void main()
     vec3 specular=ubo.ks*ubo.lightColor*pow(cos0,30)*d2reci;
     vec3 ambient=vec3(0.02,0.02,0.02)*kd_texture;
     
-    outColor=vec4((specular+diffuse+ambient)*visibility,1.0);
+    vec3 color;
+
+    if(inColor.x<0.5) color=vec3(0,0,0);
+    else color=vec3(1,1,1);
+
+    float darkness=getDarkness(fragTexCoord,2);
+    
+
+    // if(pushConsts.selectedId==pushConsts.objId)
+    // {
+    //     outColor=vec4(0,1,0,1);   
+    // }
+    // else
+    // {
+    //     outColor=vec4(vec3(darkness,darkness,darkness)*inColor*(specular+diffuse+ambient)*visibility,1.0);
+    // }
+    vec3 selectFilter=vec3(darkness,darkness,darkness);
+    if(pushConsts.selectedId==pushConsts.objId)
+    {
+        selectFilter=vec3(0,5,0);
+    }
+
+
+    outColor=vec4(selectFilter*inColor*(specular+diffuse+ambient)*visibility,1.0);
+
+
 }

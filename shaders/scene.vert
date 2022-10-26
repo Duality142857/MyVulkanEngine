@@ -14,6 +14,7 @@ layout(binding = 0) uniform UniformBufferObject
     vec3 kd;
 } ubo_scene;
 
+
 // layout (binding = 1) uniform modelMats
 // {
 // 	mat4 mats[];
