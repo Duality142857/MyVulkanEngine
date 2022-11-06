@@ -13,7 +13,7 @@ public:
     ImFont* font1;
     MyVulkanRHI* rhi;
 
-    float fps;
+    float fps=30;
     ImDrawData* drawData;
     MyGui(MyVulkanRHI* _rhi):rhi{_rhi}
     {}
@@ -75,7 +75,7 @@ public:
         
         //!upload fonts 上传字体
         {
-            font1=io.Fonts->AddFontFromFileTTF("/home/number/game/SourceHanSerifCN-VF.ttf",20.0f,NULL,io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+            font1=io.Fonts->AddFontFromFileTTF("../resources/fonts/SourceHanSerifSC-VF.ttf",20.0f,NULL,io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
             
             vkResetCommandPool(rhi->device,rhi->commandPool,0);
 

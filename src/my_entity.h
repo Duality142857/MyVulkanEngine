@@ -7,6 +7,7 @@
 #include<mygeo/obb.h>
 #include"../core/myrandom.h"
 #include"../src/my_gui.h"
+#include<map>
 
 
 extern float ga;
@@ -46,6 +47,7 @@ public:
     bool gravityFlag;
     bool dynamicFlag;
     bool selectable=true;
+
 
 
     MyEntity(){}
@@ -232,6 +234,8 @@ public:
     std::vector<std::shared_ptr<MyEntity>> entities;
     uint32_t selectedId=0;
     // std::vector<MyGeo::Mat4f> modelMats;
+    std::map<int,std::string> objInfoMap;
+
 
     DynamicWorld(MyVulkanRHI* _rhi, MyTexturePool* _texturePool, MyGui* _gui):rhi{_rhi},texturePool{_texturePool},gui{_gui}
     {}
@@ -296,6 +300,7 @@ public:
 
         entities.push_back(entity);
         entity->id=entities.size();
+        objInfoMap.insert(std::make_pair(entity->id,"box"));
         
         // std::cout<<"entity pos: "<<entity->position<<std::endl;
 
@@ -332,6 +337,7 @@ public:
         entities.push_back(entity);
         entity->id=entities.size();
 
+        objInfoMap.insert(std::make_pair(entity->id,"sphere"));
         
     }
 
@@ -383,6 +389,8 @@ public:
         entity->id=entities.size()+1;
         entity->selectable=false;
         entities.push_back(entity);
+        objInfoMap.insert(std::make_pair(entity->id,"plane"));
+
         
     }
 
@@ -426,8 +434,6 @@ public:
             if(rhi->mywindow->rightmousePressed) selectedId=0;
             pushConstant.selectedId= gui->anyWindowFocused() || rhi->mywindow->leftmousePressed || !entity->selectable ? 0:selectedId;
             
-            // std::cout<<"mousepos: "<<pushConstant.mousePos<<std::endl;
-
             vkCmdPushConstants(
                 myCommandbuffer.commandbuffer,
                 pipelineLayout,

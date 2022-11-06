@@ -17,10 +17,16 @@ public:
         dispatcher.subscribe(MouseButton_Event,[this](const Event& e){onMouseButton(e);});
 
         dispatcher.subscribe(MouseDrag_Event,[this](const Event& e){onMouseDrag(e);});
+
+        dispatcher.subscribe(Key_Event,[this](const Event& e){onKey(e);});
     }
 
     float width, height;
     GLFWwindow* window;
+
+    int currentKey;
+    int currentKeyAction;
+
     float mousescrollVal=0.f;
 
     bool leftmousePressed=false;
@@ -84,6 +90,17 @@ public:
         }
     }
 
+    void onKey(const Event& e)
+    {
+        if(e.type()==Key_Event)
+        {
+            const KeyEvent& event=*reinterpret_cast<const KeyEvent*>(&e);
+            currentKey=event.button;
+            if(event.action==GLFW_PRESS || event.action==GLFW_RELEASE)
+                currentKeyAction=event.action;
+            // std::cout<<"key pressed: "<<currentKey<<std::endl;
+        }
+    }
 
     void onMouseButton(const Event& e)
     {
@@ -151,43 +168,23 @@ public:
         glfwSetScrollCallback(window, scroll_callback);
         glfwSetMouseButtonCallback(window,mousebutton_callback);
         glfwSetCursorPosCallback(window,cursor_position_callback);
+        glfwSetKeyCallback(window,key_callback);
+        // (GLFWwindow* window, int key, int scancode, int action, int mods);
         
     }
 
+    static void key_callback(GLFWwindow* window, int button, int scancode, int action, int mods)
+    {
+        KeyEvent event{button, action};
+        auto tdispatcher = reinterpret_cast<Dispatcher*>(glfwGetWindowUserPointer(window));
+        tdispatcher->dispatch(event);
+    }
 
     static void mousebutton_callback(GLFWwindow* window, int button, int action, int mods)
     {
         MouseButtonEvent event{button,action,getCursorPos(window)};
-        auto dispatcher = reinterpret_cast<Dispatcher*>(glfwGetWindowUserPointer(window));
-        dispatcher->dispatch(event);
-        
-
-        auto mywindow = reinterpret_cast<MyWindow*>(glfwGetWindowUserPointer(window));
-        if(button==GLFW_MOUSE_BUTTON_LEFT  && action==GLFW_PRESS)
-        {
-            mywindow->leftDragVec={0,0};
-            double x,y;
-            glfwGetCursorPos(window,&x,&y);
-            mywindow->leftStartPos={(float)x,(float)y};
-            mywindow->leftmousePressed=true;
-        }
-        if(button==GLFW_MOUSE_BUTTON_RIGHT  && action==GLFW_PRESS)
-        {
-            mywindow->rightDragVec={0,0};
-            double x,y;
-            glfwGetCursorPos(window,&x,&y);
-            mywindow->rightStartPos={(float)x,(float)y};
-            mywindow->rightmousePressed=true;
-        }
-        if(button==GLFW_MOUSE_BUTTON_LEFT && action==GLFW_RELEASE)
-        {
-            mywindow->leftmousePressed=false;
-        }
-        if(button==GLFW_MOUSE_BUTTON_RIGHT && action==GLFW_RELEASE)
-        {
-            mywindow->rightmousePressed=false;
-        }
-
+        auto tdispatcher = reinterpret_cast<Dispatcher*>(glfwGetWindowUserPointer(window));
+        tdispatcher->dispatch(event);
     }
 
     static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -210,6 +207,10 @@ public:
     {
         auto mywindow = reinterpret_cast<MyWindow*>(glfwGetWindowUserPointer(window));
         mywindow->mousescrollVal+=yoffset;
+
+        // auto tdispatcher = reinterpret_cast<Dispatcher*>(glfwGetWindowUserPointer(window));
+        // tdispatcher->dispatch(event);
+
     }
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height) 

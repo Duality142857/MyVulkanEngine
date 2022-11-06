@@ -7,7 +7,7 @@
 
 enum EventType
 {
-    WindowResized_Event=0,MouseButton_Event,MouseDrag_Event
+    WindowResized_Event=0,MouseButton_Event,MouseDrag_Event, Key_Event
 };
 
 
@@ -44,6 +44,19 @@ public:
     EventType type() const override { return Type;}
 
     MouseButtonEvent(int _button,int _action, const MyGeo::Vec2f& cursorPosition):button{_button},action{_action}, cursorPosition{cursorPosition}{}
+};
+
+class KeyEvent: public Event 
+{
+public:
+    int button=-1;
+    int action=-1;
+    static constexpr EventType Type=Key_Event;
+    EventType type() const override {return Type;}
+    
+    KeyEvent(int _button, int _action):button{_button},action{_action}
+    {}
+    
 };
 
 class MouseDragEvent: public Event 

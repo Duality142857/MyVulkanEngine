@@ -4,6 +4,7 @@ layout(binding = 0) uniform UniformBufferObject
 {
     mat4 model;
     mat4 view;
+    mat4 modelview_inv;
     mat4 proj;
     mat4 lightMVP;
     vec3 lightPos;
@@ -29,17 +30,18 @@ layout(push_constant) uniform PushConsts {
 
 layout (constant_id = 0) const int textArraySize = 10;
 
-layout(binding = 1) uniform sampler2D texSampler[textArraySize];
+layout (binding = 1) uniform sampler2D texSampler[textArraySize];
 layout (binding = 2) uniform sampler2D shadowMap;
+layout (binding = 4) uniform samplerCube cubeSampler;
 
-layout(location = 0) in vec3 inPosition;
+layout(location = 0) in vec3 inPos;
 layout(location = 1) in vec3 inNormal;
-layout(location=2) in vec2 fragTexCoord;
+layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec4 inShadowCoord;
 layout(location = 4) in vec3 fragViewVec_normalized;
 layout(location = 5) in vec3 fragLightVec;
 layout(location = 6) flat in int textureId;
-layout(location =7 ) in vec3 inColor;
+layout(location = 7) in vec3 inColor;
 
 layout(location = 0) out vec4 outColor;
 
@@ -225,5 +227,11 @@ void main()
 
     outColor=vec4(selectFilter*inColor*(specular+diffuse+ambient)*visibility,1.0);
 
+
+    // vec3 inPos_unit=normalize(inPos);
+    // vec3 inPos_ref=reflect(inPos_unit, normalize(inNormal));
+    // inPos_ref=vec3(ubo.modelview_inv*vec4(inPos_ref,0.0));
+    // inPos_ref.xy*=-1.0;
+    // outColor=texture(cubeSampler,inPos_ref,1.0);
 
 }

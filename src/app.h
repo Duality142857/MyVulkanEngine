@@ -60,14 +60,13 @@ public:
     void mainloop()
     {
         int i=0;
-        std::cout<<"start mainloop"<<std::endl;
         while(!mywindow->windowShouldClose())
         {
             auto t0=mytime::now();
             mywindow->pollEvents();
             uint32_t imageIndex=renderer->startFrame();
             updateData(imageIndex);
-            updateUi();
+            updateUi();     
             updateDescriptorSets(renderer->myCommandBuffers[renderer->currentFrame],imageIndex);
             recordCommands(renderer->myCommandBuffers[renderer->currentFrame],imageIndex);
             renderer->endFrame(imageIndex);

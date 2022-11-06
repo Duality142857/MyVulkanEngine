@@ -2,6 +2,8 @@
 #include<vulkan/vulkan.h>
 #include"my_vulkanRHI.h"
 #include<mygeo/mat.h>
+#include<ktx.h>
+#include<ktxvulkan.h>
 struct PushConstantStruct
 {
     MyGeo::Mat4f modelMat;
@@ -16,6 +18,7 @@ private:
 public:
     MyVulkanUtils(MyVulkanRHI* _rhi):rhi{_rhi}{}
     void createPipelineLayout(VkDescriptorSetLayout dsLayout, VkPipelineLayout* pLayout);
+    // void loadCubemap(std::string filename, VkFormat format);
 
 };
 

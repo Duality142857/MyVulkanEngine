@@ -11,7 +11,7 @@ void MyVulkanUtils::createPipelineLayout(VkDescriptorSetLayout dsLayout, VkPipel
     pipelineLayoutInfo.pSetLayouts =&dsLayout;
 
     VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags=VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.stageFlags=VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset=0;
     pushConstantRange.size=sizeof(PushConstantStruct);
 

@@ -154,6 +154,9 @@ void MyVulkanRHI::createLogicalDevice()
 
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    //! perhaps bug
+    deviceFeatures.vertexPipelineStoresAndAtomics=true;
+    deviceFeatures.fragmentStoresAndAtomics=true;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

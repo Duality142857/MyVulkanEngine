@@ -14,6 +14,7 @@
 #include"../src/my_entity.h"
 namespace fs=std::filesystem;
 
+
 float ga=10.f;
 float eta=0.99;
 
@@ -129,7 +130,7 @@ public:
         descriptorSets_scene.resize(rhi->imageCount);
         // loadAllTextures("../resources");
 
-        texturePool.addTexture("../resources/cube/default.png");
+        texturePool.addTexture("../resources/mitsuba-icon.png");
         // texturePool.addTexture("../resources/MC003_Kozakura_Mari.png");
         // texturePool.addTexture("../resources/lpshead/lambertian.jpg");
         // texturePool.addTexture("../resources/MC003_Kozakura_Mari.png");
@@ -331,6 +332,7 @@ public:
             }
         }
         std::memset(data,0,storagebufferLen*sizeof(uint32_t));
+        storageBuffers_scene[0].unmap();
 
 
         // rhi->copyBuffer2host(storageBuffers_scene[0].buffer,d.data(),storageBuffers_scene[0].size);
@@ -535,6 +537,8 @@ public:
         std::vector<VkDescriptorPoolSize> poolsizes;
         poolsizes.push_back(descriptors.poolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,1000));
         poolsizes.push_back(descriptors.poolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,1000));
+        poolsizes.push_back(descriptors.poolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,10));
+
         descriptors.createDescriptorPool(poolsizes,1000);
 
         //!create descriptorSetLayout

@@ -1,10 +1,10 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include<GLFW/glfw3.h>
+// #include<GLFW/glfw3.h>
 #include<optional>
 #include<vector>
 #include"my_window.h"
-
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
 #else
@@ -65,6 +65,7 @@ public:
 
     VkRenderPass renderPass;
     VkRenderPass shadowRenderpass;
+    // VkRenderPass skyboxPass;
     std::vector<VkFramebuffer> framebuffers;
 
 
