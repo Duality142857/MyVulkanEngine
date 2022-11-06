@@ -2,3 +2,4 @@ build/*
 resources/*
 doc/*
 .vscode/*
+ext/glfw-3.3.8/
