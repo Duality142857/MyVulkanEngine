@@ -3,3 +3,4 @@ resources/*
 doc/*
 .vscode/*
 ext/glfw-3.3.8/
+READEME.md
